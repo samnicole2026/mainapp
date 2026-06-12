@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send } from 'lucide-react';
+import { ArrowUp } from 'lucide-react';
 import { User, ChatMessage } from '../types';
 
 interface ChatInterfaceProps {
@@ -172,21 +172,26 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, isOnboarding }) => 
 
       {/* Input Area */}
       <div className="p-4 glass-strong">
-        <div className="flex gap-2">
+        <div className="relative">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Tell me what you need to do..."
-            className="flex-1 px-4 py-3 rounded-xl glass-input text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-400"
+            className="w-full pl-4 pr-12 py-3 rounded-xl glass-input text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-400"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim()}
-            className="glass-button px-6 py-3 rounded-xl font-semibold flex items-center gap-2 hover:bg-white hover:bg-opacity-20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white"
+            className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all ${
+              input.trim()
+                ? 'bg-gradient-to-br from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 shadow-md hover:shadow-lg'
+                : 'bg-gray-300 cursor-not-allowed'
+            }`}
+            title="Send message"
           >
-            <Send className="w-5 h-5" strokeWidth={2} />
+            <ArrowUp className={`w-5 h-5 ${input.trim() ? 'text-white' : 'text-gray-500'}`} strokeWidth={2.5} />
           </button>
         </div>
       </div>

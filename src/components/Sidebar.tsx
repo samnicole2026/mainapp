@@ -42,13 +42,13 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-2 border-b border-purple-100">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full p-2 rounded-lg hover:bg-purple-50 transition-colors flex items-center justify-center"
+          className="w-full p-2 rounded-lg hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all flex items-center justify-center group"
           title={isExpanded ? 'Minimize' : 'Expand'}
         >
           {isExpanded ? (
-            <ChevronLeft className="w-5 h-5 text-gray-700" strokeWidth={1.5} />
+            <ChevronLeft className="w-5 h-5 text-purple-600 group-hover:text-purple-700" strokeWidth={2} />
           ) : (
-            <ChevronRight className="w-5 h-5 text-gray-700" strokeWidth={1.5} />
+            <ChevronRight className="w-5 h-5 text-blue-600 group-hover:text-blue-700" strokeWidth={2} />
           )}
         </button>
       </div>
@@ -57,11 +57,13 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-2 border-b border-purple-100">
         <button
           onClick={onViewCalendars}
-          className="w-full p-2 rounded-lg hover:bg-purple-50 transition-colors flex items-center gap-3"
+          className="w-full p-2 rounded-lg hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all flex items-center gap-3 group"
           title="View All Calendars"
         >
-          <Calendar className="w-5 h-5 text-purple-600 flex-shrink-0" strokeWidth={1.5} />
-          {isExpanded && <span className="text-sm font-medium text-gray-800">Calendars</span>}
+          <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 shadow-md group-hover:shadow-lg transition-shadow">
+            <Calendar className="w-4 h-4 text-white" strokeWidth={2} />
+          </div>
+          {isExpanded && <span className="text-sm font-semibold text-gray-800">Calendars</span>}
         </button>
       </div>
 
@@ -69,11 +71,13 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-2 border-b border-purple-100">
         <button
           onClick={onNewChat}
-          className="w-full p-2 rounded-lg hover:bg-purple-50 transition-colors flex items-center gap-3"
+          className="w-full p-2 rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all flex items-center gap-3 group"
           title="New Chat"
         >
-          <Plus className="w-5 h-5 text-purple-600 flex-shrink-0" strokeWidth={1.5} />
-          {isExpanded && <span className="text-sm font-medium text-gray-800">New Chat</span>}
+          <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 shadow-md group-hover:shadow-lg transition-shadow">
+            <Plus className="w-4 h-4 text-white" strokeWidth={2} />
+          </div>
+          {isExpanded && <span className="text-sm font-semibold text-gray-800">New Chat</span>}
         </button>
       </div>
 
@@ -91,16 +95,26 @@ const Sidebar: React.FC<SidebarProps> = ({
             <button
               key={chat.id}
               onClick={() => onSelectChat(chat.id)}
-              className={`w-full p-2 rounded-lg transition-colors flex items-center gap-3 ${
+              className={`w-full p-2 rounded-lg transition-all flex items-center gap-3 group ${
                 currentChatId === chat.id
-                  ? 'bg-purple-100 text-purple-700'
-                  : 'hover:bg-purple-50 text-gray-700'
+                  ? 'bg-gradient-to-r from-purple-100 to-blue-100 shadow-sm'
+                  : 'hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50'
               }`}
               title={isExpanded ? undefined : chat.title}
             >
-              <MessageSquare className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
+              <div className={`p-1 rounded-lg transition-all ${
+                currentChatId === chat.id
+                  ? 'bg-gradient-to-br from-purple-500 to-blue-500 shadow-md'
+                  : 'bg-gradient-to-br from-purple-400 to-blue-400 opacity-70 group-hover:opacity-100'
+              }`}>
+                <MessageSquare className="w-4 h-4 text-white" strokeWidth={2} />
+              </div>
               {isExpanded && (
-                <span className="text-sm truncate">{chat.title}</span>
+                <span className={`text-sm truncate font-medium ${
+                  currentChatId === chat.id ? 'text-purple-700' : 'text-gray-700'
+                }`}>
+                  {chat.title}
+                </span>
               )}
             </button>
           ))}
@@ -113,15 +127,15 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div>
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="w-full p-2 rounded-lg hover:bg-purple-50 transition-colors flex items-center gap-3"
+              className="w-full p-2 rounded-lg hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all flex items-center gap-3 group"
             >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0 shadow-sm">
-                <span className="text-white font-semibold text-sm">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0 shadow-md group-hover:shadow-lg transition-shadow">
+                <span className="text-white font-bold text-sm">
                   {user.name.charAt(0).toUpperCase()}
                 </span>
               </div>
               {isExpanded && (
-                <span className="text-sm font-medium text-gray-800 truncate">{user.name}</span>
+                <span className="text-sm font-semibold text-gray-800 truncate">{user.name}</span>
               )}
             </button>
 
@@ -133,10 +147,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                     onSignOut();
                     setShowUserMenu(false);
                   }}
-                  className="w-full p-3 hover:bg-purple-50 transition-colors flex items-center gap-3"
+                  className="w-full p-3 hover:bg-gradient-to-r hover:from-pink-50 hover:to-purple-50 transition-all flex items-center gap-3 group"
                 >
-                  <LogOut className="w-5 h-5 text-gray-700" strokeWidth={1.5} />
-                  <span className="text-sm font-medium text-gray-800">Log Out</span>
+                  <div className="p-1 rounded-lg bg-gradient-to-br from-pink-500 to-purple-500 shadow-sm">
+                    <LogOut className="w-4 h-4 text-white" strokeWidth={2} />
+                  </div>
+                  <span className="text-sm font-semibold text-gray-800">Log Out</span>
                 </button>
               </div>
             )}
@@ -144,11 +160,13 @@ const Sidebar: React.FC<SidebarProps> = ({
         ) : (
           <button
             onClick={onSignIn}
-            className="w-full p-2 rounded-lg hover:bg-purple-50 transition-colors flex items-center gap-3"
+            className="w-full p-2 rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all flex items-center gap-3 group"
             title="Sign In"
           >
-            <User className="w-5 h-5 text-purple-600 flex-shrink-0" strokeWidth={1.5} />
-            {isExpanded && <span className="text-sm font-medium text-gray-800">Sign In</span>}
+            <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 shadow-md group-hover:shadow-lg transition-shadow">
+              <User className="w-4 h-4 text-white" strokeWidth={2} />
+            </div>
+            {isExpanded && <span className="text-sm font-semibold text-gray-800">Sign In</span>}
           </button>
         )}
       </div>

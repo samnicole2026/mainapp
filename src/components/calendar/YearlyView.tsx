@@ -15,89 +15,88 @@ const YearlyView: React.FC<YearlyViewProps> = ({
   const year = currentDate.getFullYear();
   const months = Array.from({ length: 12 }, (_, i) => i);
 
-  const getMonthCalendar = (monthIndex: number) => {
-    const firstDay = new Date(year, monthIndex, 1);
-    const lastDay = new Date(year, monthIndex + 1, 0);
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - startDate.getDay());
-    
-    const days = [];
-    const current = new Date(startDate);
-    
-    while (days.length < 35) {
-      days.push(new Date(current));
-      current.setDate(current.getDate() + 1);
-    }
-    
-    return days;
-  };
-
   const getEventsForMonth = (monthIndex: number) => {
     return events.filter(event => {
       const eventDate = new Date(event.start);
-      return eventDate.getFullYear() === year && eventDate.getMonth() === monthIndex;
+      return (
+        eventDate.getMonth() === monthIndex &&
+        eventDate.getFullYear() === year
+      );
     });
   };
 
-  const hasEventsOnDay = (day: Date, monthIndex: number) => {
-    if (day.getMonth() !== monthIndex) return false;
-    return events.some(event => {
-      const eventDate = new Date(event.start);
-      return eventDate.toDateString() === day.toDateString();
-    });
+  const getDaysInMonth = (monthIndex: number) => {
+    return new Date(year, monthIndex + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (monthIndex: number) => {
+    return new Date(year, monthIndex, 1).getDay();
+  };
+
+  const renderMiniMonth = (monthIndex: number) => {
+    const daysInMonth = getDaysInMonth(monthIndex);
+    const firstDay = getFirstDayOfMonth(monthIndex);
+    const monthEvents = getEventsForMonth(monthIndex);
+
+    const days = [];
+    for (let i = 0; i < firstDay; i++) {
+      days.push(null);
+    }
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push(i);
+    }
+
+    const hasEventOnDay = (day: number) => {
+      return monthEvents.some(event => {
+        const eventDate = new Date(event.start);
+        return eventDate.getDate() === day;
+      });
+    };
+
+    return (
+      <div
+        className="bg-white rounded-lg p-3 border border-gray-200 cursor-pointer hover:shadow-lg transition-all hover:border-purple-300"
+        onClick={() => onMonthClick(monthIndex)}
+      >
+        <div className="text-center font-semibold text-gray-900 mb-2">
+          {new Date(year, monthIndex).toLocaleDateString('en-US', { month: 'long' })}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+            <div key={i} className="text-center text-xs text-gray-500 font-medium">
+              {day}
+            </div>
+          ))}
+          {days.map((day, index) => (
+            <div
+              key={index}
+              className={`text-center text-xs py-1 ${
+                day === null
+                  ? ''
+                  : hasEventOnDay(day)
+                  ? 'bg-purple-100 text-purple-700 font-semibold rounded'
+                  : 'text-gray-700'
+              }`}
+            >
+              {day}
+            </div>
+          ))}
+        </div>
+        <div className="mt-2 text-xs text-gray-600 text-center">
+          {monthEvents.length} {monthEvents.length === 1 ? 'event' : 'events'}
+        </div>
+      </div>
+    );
   };
 
   return (
-    <div className="h-full overflow-auto p-4">
-      <div className="grid grid-cols-3 gap-4">
-        {months.map((monthIndex) => {
-          const monthName = new Date(year, monthIndex).toLocaleDateString('en-US', {
-            month: 'long',
-          });
-          const days = getMonthCalendar(monthIndex);
-          const monthEvents = getEventsForMonth(monthIndex);
-
-          return (
-            <div
-              key={monthIndex}
-              className="glass-card rounded-xl p-3 cursor-pointer hover:bg-white hover:bg-opacity-20 transition-colors"
-              onClick={() => onMonthClick(monthIndex)}
-            >
-              <h4 className="text-sm font-bold text-black mb-2 text-center">
-                {monthName}
-              </h4>
-              <div className="grid grid-cols-7 gap-1">
-                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-                  <div
-                    key={i}
-                    className="text-xs text-center text-black opacity-60 font-semibold"
-                  >
-                    {day}
-                  </div>
-                ))}
-                {days.map((day, index) => (
-                  <div
-                    key={index}
-                    className={`text-xs text-center p-1 rounded ${
-                      day.getMonth() !== monthIndex
-                        ? 'text-black opacity-20'
-                        : hasEventsOnDay(day, monthIndex)
-                        ? 'bg-purple-600 text-white font-bold'
-                        : 'text-black'
-                    }`}
-                  >
-                    {day.getDate()}
-                  </div>
-                ))}
-              </div>
-              {monthEvents.length > 0 && (
-                <div className="mt-2 text-xs text-black text-center font-semibold">
-                  {monthEvents.length} event{monthEvents.length !== 1 ? 's' : ''}
-                </div>
-              )}
-            </div>
-          );
-        })}
+    <div className="h-full overflow-auto p-6">
+      <div className="grid grid-cols-3 gap-4 max-w-6xl mx-auto">
+        {months.map(month => (
+          <div key={month}>
+            {renderMiniMonth(month)}
+          </div>
+        ))}
       </div>
     </div>
   );

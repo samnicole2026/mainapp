@@ -1,6 +1,6 @@
 import React from 'react';
 import { CalendarEvent } from '../../types';
-import { Trash2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 interface WeeklyViewProps {
   currentDate: Date;
@@ -17,7 +17,7 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({
 }) => {
   const weekStart = new Date(currentDate);
   weekStart.setDate(currentDate.getDate() - currentDate.getDay());
-  
+
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const day = new Date(weekStart);
     day.setDate(weekStart.getDate() + i);
@@ -26,105 +26,93 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
-  const getEventsForDay = (day: Date) => {
+  const getEventsForDayAndHour = (day: Date, hour: number) => {
     return events.filter(event => {
       const eventDate = new Date(event.start);
-      return eventDate.toDateString() === day.toDateString();
+      return (
+        eventDate.getDate() === day.getDate() &&
+        eventDate.getMonth() === day.getMonth() &&
+        eventDate.getFullYear() === day.getFullYear() &&
+        eventDate.getHours() === hour
+      );
     });
   };
 
-  const getEventPosition = (event: CalendarEvent) => {
-    const start = new Date(event.start);
-    const end = new Date(event.end);
-    const startHour = start.getHours() + start.getMinutes() / 60;
-    const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-    
-    return {
-      top: `${startHour * 40}px`,
-      height: `${Math.max(duration * 40, 20)}px`,
-    };
+  const isToday = (day: Date) => {
+    const today = new Date();
+    return (
+      day.getDate() === today.getDate() &&
+      day.getMonth() === today.getMonth() &&
+      day.getFullYear() === today.getFullYear()
+    );
   };
 
   return (
     <div className="h-full overflow-auto">
-      <div className="flex border-b border-black border-opacity-10 sticky top-0 glass-card z-10">
-        <div className="w-12 flex-shrink-0" />
-        {weekDays.map((day) => (
-          <div
-            key={day.toISOString()}
-            className="flex-1 p-2 text-center border-l border-black border-opacity-10"
-          >
-            <div className="text-xs font-semibold text-black opacity-60">
-              {day.toLocaleDateString('en-US', { weekday: 'short' })}
-            </div>
-            <div className={`text-lg font-bold ${
-              day.toDateString() === new Date().toDateString()
-                ? 'text-purple-600'
-                : 'text-black'
-            }`}>
-              {day.getDate()}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex">
-        <div className="w-12 flex-shrink-0">
-          {hours.map((hour) => (
-            <div key={hour} className="h-[40px] text-xs text-black p-1">
-              {hour.toString().padStart(2, '0')}
+      <div className="min-w-[800px]">
+        <div className="grid grid-cols-8 border-b border-gray-200 bg-white sticky top-0 z-10">
+          <div className="p-2 border-r border-gray-200"></div>
+          {weekDays.map((day, index) => (
+            <div
+              key={index}
+              className={`p-2 text-center border-r border-gray-200 ${
+                isToday(day) ? 'bg-purple-50' : ''
+              }`}
+            >
+              <div className="text-xs text-gray-600 font-medium">
+                {day.toLocaleDateString('en-US', { weekday: 'short' })}
+              </div>
+              <div className={`text-lg font-bold ${
+                isToday(day) ? 'text-purple-600' : 'text-gray-900'
+              }`}>
+                {day.getDate()}
+              </div>
             </div>
           ))}
         </div>
 
-        {weekDays.map((day) => {
-          const dayEvents = getEventsForDay(day);
-          return (
-            <div
-              key={day.toISOString()}
-              className="flex-1 relative border-l border-black border-opacity-10"
-            >
-              {hours.map((hour) => (
-                <div
-                  key={hour}
-                  className="h-[40px] border-b border-black border-opacity-10 cursor-pointer hover:bg-white hover:bg-opacity-10 transition-colors"
-                  onClick={() => {
-                    const date = new Date(day);
-                    date.setHours(hour, 0, 0, 0);
-                    onAddEvent(date);
-                  }}
-                />
-              ))}
-              
-              {dayEvents.map((event) => {
-                const position = getEventPosition(event);
-                return (
-                  <div
-                    key={event.id}
-                    className="absolute left-1 right-1 rounded p-1 text-white text-xs font-semibold shadow group"
-                    style={{
-                      ...position,
-                      backgroundColor: event.category.color,
-                    }}
-                  >
-                    <div className="flex items-start justify-between gap-1">
-                      <div className="flex-1 min-w-0 truncate">{event.title}</div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRemoveEvent(event.id);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity bg-white bg-opacity-20 rounded p-0.5"
-                      >
-                        <Trash2 className="w-2.5 h-2.5" strokeWidth={2} />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+        {hours.map(hour => (
+          <div key={hour} className="grid grid-cols-8 border-b border-gray-200">
+            <div className="p-2 text-xs text-gray-600 font-medium border-r border-gray-200 bg-white">
+              {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
             </div>
-          );
-        })}
+            {weekDays.map((day, dayIndex) => {
+              const dayEvents = getEventsForDayAndHour(day, hour);
+              const cellDate = new Date(day);
+              cellDate.setHours(hour, 0, 0, 0);
+
+              return (
+                <div
+                  key={dayIndex}
+                  className={`p-1 border-r border-gray-200 min-h-[60px] hover:bg-gray-50 transition-colors group relative ${
+                    isToday(day) ? 'bg-purple-50 bg-opacity-30' : 'bg-white'
+                  }`}
+                >
+                  <button
+                    onClick={() => onAddEvent(cellDate)}
+                    className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-white rounded shadow-sm"
+                  >
+                    <Plus className="w-4 h-4 text-gray-600" />
+                  </button>
+                  <div className="space-y-1">
+                    {dayEvents.map(event => (
+                      <div
+                        key={event.id}
+                        className="text-xs px-2 py-1 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm"
+                        style={{ backgroundColor: event.category.color }}
+                        onClick={() => onRemoveEvent(event.id)}
+                      >
+                        <div className="font-medium text-white truncate">
+                          {event.title}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </div>
     </div>
   );

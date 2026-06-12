@@ -67,8 +67,8 @@ const TopNav: React.FC<TopNavProps> = ({
             }`}
             disabled={!showReturnButton || !onReturnToLanding}
           >
-            <div className="glass-card rounded-xl p-2 shadow-sm">
-              <Calendar className="w-7 h-7 text-purple-600" strokeWidth={1.5} />
+            <div className="glass-card rounded-xl p-2 shadow-md bg-gradient-to-br from-purple-500 to-pink-500">
+              <Calendar className="w-7 h-7 text-white" strokeWidth={2} />
             </div>
             <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Plan-elope</h1>
           </button>
@@ -89,18 +89,18 @@ const TopNav: React.FC<TopNavProps> = ({
                   />
                   <button
                     onClick={handleTitleSave}
-                    className="p-1.5 rounded-lg hover:bg-purple-100 transition-colors"
+                    className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 hover:shadow-lg transition-all"
                   >
-                    <Check className="w-4 h-4 text-purple-600" strokeWidth={1.5} />
+                    <Check className="w-4 h-4 text-white" strokeWidth={2} />
                   </button>
                 </div>
               ) : (
                 <button
                   onClick={handleTitleEdit}
-                  className="flex items-center gap-2 px-4 py-1.5 rounded-lg hover:bg-purple-50 transition-colors group"
+                  className="flex items-center gap-2 px-4 py-1.5 rounded-lg hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all group"
                 >
                   <span className="text-sm font-medium text-gray-800">{chatTitle}</span>
-                  <Edit2 className="w-3.5 h-3.5 text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={1.5} />
+                  <Edit2 className="w-3.5 h-3.5 text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={2} />
                 </button>
               )}
             </div>
@@ -112,9 +112,9 @@ const TopNav: React.FC<TopNavProps> = ({
               /* Landing Page: Sign In Button */
               <button
                 onClick={onSignIn}
-                className="glass-button rounded-xl px-5 py-2 font-medium flex items-center gap-2 hover:bg-purple-50 transition-colors text-purple-700 text-sm shadow-sm"
+                className="rounded-xl px-5 py-2 font-semibold flex items-center gap-2 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white shadow-md hover:shadow-lg transition-all"
               >
-                <User className="w-4 h-4" strokeWidth={1.5} />
+                <User className="w-4 h-4" strokeWidth={2} />
                 Sign In
               </button>
             ) : (
@@ -123,33 +123,35 @@ const TopNav: React.FC<TopNavProps> = ({
                 {/* Unscheduled Tasks Button */}
                 <button
                   onClick={onToggleTasks}
-                  className={`p-2 rounded-xl transition-colors shadow-sm ${
+                  className={`p-2 rounded-xl transition-all shadow-md hover:shadow-lg ${
                     showTasks 
-                      ? 'bg-purple-100 text-purple-700' 
-                      : 'hover:bg-purple-50 text-gray-700'
+                      ? 'bg-gradient-to-br from-pink-500 to-purple-500 text-white' 
+                      : 'bg-gradient-to-br from-pink-400 to-purple-400 text-white hover:from-pink-500 hover:to-purple-500'
                   }`}
                   title="Unscheduled Tasks"
                 >
-                  <ListTodo className="w-5 h-5" strokeWidth={1.5} />
+                  <ListTodo className="w-5 h-5" strokeWidth={2} />
                 </button>
 
                 {/* Connect Calendar Button */}
                 <button
                   onClick={() => setShowConnectModal(true)}
-                  className="p-2 rounded-xl hover:bg-purple-50 transition-colors text-gray-700 shadow-sm"
+                  className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-md hover:shadow-lg transition-all"
                   title="Connect Google Calendar"
                 >
-                  <Link2 className="w-5 h-5" strokeWidth={1.5} />
+                  <Link2 className="w-5 h-5" strokeWidth={2} />
                 </button>
 
                 {/* View Calendar Button */}
                 <button
                   onClick={onToggleCalendar}
-                  className={`glass-button rounded-xl px-4 py-2 font-medium flex items-center gap-2 hover:bg-purple-50 transition-colors text-sm shadow-sm ${
-                    showCalendar ? 'bg-purple-100 text-purple-700' : 'text-gray-700'
+                  className={`rounded-xl px-4 py-2 font-semibold flex items-center gap-2 shadow-md hover:shadow-lg transition-all ${
+                    showCalendar 
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' 
+                      : 'bg-gradient-to-r from-purple-400 to-pink-400 text-white hover:from-purple-500 hover:to-pink-500'
                   }`}
                 >
-                  <Calendar className="w-4 h-4" strokeWidth={1.5} />
+                  <Calendar className="w-4 h-4" strokeWidth={2} />
                   {showCalendar ? 'Hide Calendar' : 'View Calendar'}
                 </button>
               </>
@@ -183,9 +185,9 @@ const TopNav: React.FC<TopNavProps> = ({
                   console.log('Connect Google Calendar');
                   setShowConnectModal(false);
                 }}
-                className="w-full glass-button rounded-xl px-4 py-3 font-medium hover:bg-purple-50 transition-colors text-purple-700 flex items-center justify-center gap-2 shadow-sm"
+                className="w-full rounded-xl px-4 py-3 font-semibold bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all"
               >
-                <Link2 className="w-5 h-5" strokeWidth={1.5} />
+                <Link2 className="w-5 h-5" strokeWidth={2} />
                 Connect with Google
               </button>
 

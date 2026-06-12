@@ -100,15 +100,15 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="glass-card p-4 border-b border-white border-opacity-20">
+    <div className="h-full flex flex-col bg-white">
+      <div className="bg-white p-4 border-b border-gray-200 shadow-sm">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-black">Your Schedule</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Your Schedule</h2>
           <div className="flex items-center gap-2">
             <select
               value={viewMode}
               onChange={(e) => setViewMode(e.target.value as ViewMode)}
-              className="glass-input rounded-xl px-3 py-2 text-black font-semibold"
+              className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             >
               <option value="daily">Daily</option>
               <option value="weekly">Weekly</option>
@@ -117,7 +117,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
             </select>
             <button
               onClick={() => handleAddEvent()}
-              className="glass-button rounded-xl px-4 py-2 font-semibold flex items-center gap-2 text-black"
+              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-lg px-4 py-2 font-semibold flex items-center gap-2 shadow-md transition-all"
             >
               <Plus className="w-5 h-5" strokeWidth={2} />
               Add Event
@@ -128,23 +128,23 @@ const CalendarView: React.FC<CalendarViewProps> = ({
         <div className="flex items-center justify-between">
           <button
             onClick={handlePrevious}
-            className="glass-button rounded-xl p-2"
+            className="bg-gray-100 hover:bg-gray-200 rounded-lg p-2 transition-colors"
           >
-            <ChevronLeft className="w-6 h-6 text-black" strokeWidth={2} />
+            <ChevronLeft className="w-6 h-6 text-gray-700" strokeWidth={2} />
           </button>
           <div className="text-center">
-            <p className="text-2xl font-bold text-black">{getDateDisplay()}</p>
+            <p className="text-2xl font-bold text-gray-900">{getDateDisplay()}</p>
           </div>
           <button
             onClick={handleNext}
-            className="glass-button rounded-xl p-2"
+            className="bg-gray-100 hover:bg-gray-200 rounded-lg p-2 transition-colors"
           >
-            <ChevronRight className="w-6 h-6 text-black" strokeWidth={2} />
+            <ChevronRight className="w-6 h-6 text-gray-700" strokeWidth={2} />
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto bg-gray-50">
         {viewMode === 'daily' && (
           <DailyView
             currentDate={currentDate}

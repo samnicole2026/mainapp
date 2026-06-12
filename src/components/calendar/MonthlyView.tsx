@@ -1,5 +1,6 @@
 import React from 'react';
 import { CalendarEvent } from '../../types';
+import { Plus } from 'lucide-react';
 
 interface MonthlyViewProps {
   currentDate: Date;
@@ -16,84 +17,96 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
 }) => {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-  
+
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
-  const startDate = new Date(firstDay);
-  startDate.setDate(startDate.getDate() - startDate.getDay());
-  
+  const daysInMonth = lastDay.getDate();
+  const startingDayOfWeek = firstDay.getDay();
+
   const days = [];
-  const current = new Date(startDate);
-  
-  while (days.length < 42) {
-    days.push(new Date(current));
-    current.setDate(current.getDate() + 1);
+  for (let i = 0; i < startingDayOfWeek; i++) {
+    days.push(null);
+  }
+  for (let i = 1; i <= daysInMonth; i++) {
+    days.push(i);
   }
 
-  const getEventsForDay = (day: Date) => {
+  const getEventsForDay = (day: number) => {
+    const dayDate = new Date(year, month, day);
     return events.filter(event => {
       const eventDate = new Date(event.start);
-      return eventDate.toDateString() === day.toDateString();
+      return (
+        eventDate.getDate() === day &&
+        eventDate.getMonth() === month &&
+        eventDate.getFullYear() === year
+      );
     });
   };
 
-  const isToday = (day: Date) => {
-    return day.toDateString() === new Date().toDateString();
-  };
-
-  const isCurrentMonth = (day: Date) => {
-    return day.getMonth() === month;
+  const isToday = (day: number) => {
+    const today = new Date();
+    return (
+      day === today.getDate() &&
+      month === today.getMonth() &&
+      year === today.getFullYear()
+    );
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="grid grid-cols-7 border-b border-black border-opacity-10">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-          <div
-            key={day}
-            className="p-2 text-center text-sm font-bold text-black"
-          >
+    <div className="h-full p-4">
+      <div className="grid grid-cols-7 gap-2 h-full">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+          <div key={day} className="text-center font-semibold text-gray-600 text-sm py-2">
             {day}
           </div>
         ))}
-      </div>
-
-      <div className="flex-1 grid grid-cols-7 grid-rows-6">
         {days.map((day, index) => {
+          if (day === null) {
+            return <div key={`empty-${index}`} className="bg-white rounded-lg border border-gray-200" />;
+          }
+
           const dayEvents = getEventsForDay(day);
+          const date = new Date(year, month, day);
+
           return (
             <div
-              key={index}
-              className={`border-r border-b border-black border-opacity-10 p-2 cursor-pointer hover:bg-white hover:bg-opacity-10 transition-colors ${
-                !isCurrentMonth(day) ? 'opacity-40' : ''
-              }`}
-              onClick={() => onAddEvent(day)}
+              key={day}
+              className={`bg-white rounded-lg border ${
+                isToday(day) ? 'border-purple-500 border-2' : 'border-gray-200'
+              } p-2 min-h-[100px] flex flex-col hover:shadow-md transition-shadow`}
             >
-              <div
-                className={`text-sm font-semibold mb-1 ${
-                  isToday(day)
-                    ? 'bg-purple-600 text-white w-6 h-6 rounded-full flex items-center justify-center'
-                    : 'text-black'
-                }`}
-              >
-                {day.getDate()}
+              <div className="flex items-center justify-between mb-1">
+                <span className={`text-sm font-semibold ${
+                  isToday(day) ? 'text-purple-600' : 'text-gray-900'
+                }`}>
+                  {day}
+                </span>
+                <button
+                  onClick={() => onAddEvent(date)}
+                  className="opacity-0 hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded"
+                >
+                  <Plus className="w-4 h-4 text-gray-600" />
+                </button>
               </div>
-              <div className="space-y-1">
-                {dayEvents.slice(0, 3).map((event) => (
+              <div className="flex-1 space-y-1 overflow-y-auto">
+                {dayEvents.map(event => (
                   <div
                     key={event.id}
-                    className="text-xs p-1 rounded text-white font-semibold truncate group relative"
+                    className="text-xs px-2 py-1 rounded cursor-pointer hover:opacity-80 transition-opacity shadow-sm"
                     style={{ backgroundColor: event.category.color }}
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={() => onRemoveEvent(event.id)}
                   >
-                    {event.title}
+                    <div className="font-medium text-white truncate">
+                      {event.title}
+                    </div>
+                    <div className="text-white text-opacity-90">
+                      {event.start.toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      })}
+                    </div>
                   </div>
                 ))}
-                {dayEvents.length > 3 && (
-                  <div className="text-xs text-black font-semibold">
-                    +{dayEvents.length - 3} more
-                  </div>
-                )}
               </div>
             </div>
           );
