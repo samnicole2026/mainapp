@@ -12,30 +12,33 @@ interface Chat {
   id: string;
   title: string;
   lastModified: Date;
-  data?: any; // Store chat-specific data
+  data?: any;
 }
 
 const STORAGE_KEYS = {
   USER: 'planelope_user',
   CHATS: 'planelope_chats',
   CURRENT_CHAT: 'planelope_current_chat',
+  DARK_MODE: 'planelope_dark_mode',
 };
 
 function App() {
   const [state, setState] = useState<AppState>('landing');
   const [showSignIn, setShowSignIn] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [showTasks, setShowTasks] = useState(true);
+  const [showCalendar, setShowCalendar] = useState(true); // DEFAULT = true (Chat + Schedule)
+  const [showTasks, setShowTasks] = useState(false); // DEFAULT = false
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [chatTitle, setChatTitle] = useState('Plan-elope v1 - after meeting 2');
+  const [darkMode, setDarkMode] = useState(false);
 
-  // Load user and chats from localStorage on mount
+  // Load user, chats, and dark mode preference from localStorage on mount
   useEffect(() => {
     const savedUser = localStorage.getItem(STORAGE_KEYS.USER);
     const savedChats = localStorage.getItem(STORAGE_KEYS.CHATS);
     const savedCurrentChat = localStorage.getItem(STORAGE_KEYS.CURRENT_CHAT);
+    const savedDarkMode = localStorage.getItem(STORAGE_KEYS.DARK_MODE);
 
     if (savedUser) {
       setUser(JSON.parse(savedUser));
@@ -52,6 +55,10 @@ function App() {
           setChatTitle(currentChat.title);
         }
       }
+    }
+
+    if (savedDarkMode) {
+      setDarkMode(JSON.parse(savedDarkMode));
     }
   }, []);
 
@@ -78,6 +85,11 @@ function App() {
     }
   }, [currentChatId]);
 
+  // Save dark mode preference to localStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.DARK_MODE, JSON.stringify(darkMode));
+  }, [darkMode]);
+
   const handleStartScheduling = () => {
     setShowSignIn(true);
   };
@@ -87,7 +99,6 @@ function App() {
     setShowSignIn(false);
     setState('app');
     
-    // Create initial chat if none exists
     if (chats.length === 0) {
       handleNewChat();
     }
@@ -97,9 +108,8 @@ function App() {
     setUser(null);
     setState('landing');
     setShowSignIn(false);
-    setShowCalendar(false);
-    setShowTasks(true);
-    // Keep chats in localStorage for when user signs back in
+    setShowCalendar(true); // Reset to default
+    setShowTasks(false); // Reset to default
   };
 
   const handleReturnToLanding = () => {
@@ -139,12 +149,25 @@ function App() {
   };
 
   const handleViewCalendars = () => {
-    // TODO: Implement calendars view modal
     console.log('View all calendars from all chats');
   };
 
+  const handleToggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
+
+  const handleViewCalendar = () => {
+    console.log('View calendar clicked');
+    setShowCalendar(true);
+  };
+
+  const handleLinkCalendar = () => {
+    console.log('Link calendar clicked');
+    // TODO: Open calendar linking modal
+  };
+
   return (
-    <div className="h-screen w-screen overflow-hidden flex">
+    <div className={`h-screen w-screen overflow-hidden flex ${darkMode ? 'dark' : ''}`}>
       {/* Left Sidebar - Always Visible */}
       <Sidebar
         user={user}
@@ -155,6 +178,8 @@ function App() {
         onNewChat={handleNewChat}
         onSelectChat={handleSelectChat}
         onViewCalendars={handleViewCalendars}
+        darkMode={darkMode}
+        onToggleDarkMode={handleToggleDarkMode}
       />
 
       {/* Main Content Area */}
@@ -171,18 +196,22 @@ function App() {
           isLandingPage={state === 'landing'}
           chatTitle={chatTitle}
           onChatTitleChange={handleChatTitleChange}
+          darkMode={darkMode}
+          onViewCalendar={state === 'app' ? handleViewCalendar : undefined}
+          onLinkCalendar={state === 'app' ? handleLinkCalendar : undefined}
         />
 
         {/* Page Content */}
         <div className="flex-1 overflow-hidden">
           {state === 'landing' && (
-            <LandingPage onStartScheduling={handleStartScheduling} />
+            <LandingPage onStartScheduling={handleStartScheduling} darkMode={darkMode} />
           )}
           
           {showSignIn && (
             <SignInModal 
               onClose={() => setShowSignIn(false)}
               onSignIn={handleSignIn}
+              darkMode={darkMode}
             />
           )}
 
@@ -191,6 +220,7 @@ function App() {
               user={user}
               showCalendar={showCalendar}
               showTasks={showTasks}
+              darkMode={darkMode}
             />
           )}
         </div>

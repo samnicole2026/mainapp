@@ -1,255 +1,111 @@
 import React, { useState } from 'react';
-import { X, Plus, Clock, Calendar, Star, Trash2 } from 'lucide-react';
-import { Task, Category } from '../types';
-import { PRESET_COLORS } from '../utils/categories';
+import { Plus, Check, Circle } from 'lucide-react';
 
-interface TasksSidebarProps {
-  tasks: Task[];
-  categories: Category[];
-  onAddTask: (task: Task) => void;
-  onRemoveTask: (taskId: string) => void;
-  onScheduleTask: (taskId: string, date: Date, time: string) => void;
-  onAddCategory: (name: string, color: string) => Category;
-  onClose: () => void;
+interface Task {
+  id: string;
+  title: string;
+  completed: boolean;
 }
 
-const TasksSidebar: React.FC<TasksSidebarProps> = ({
-  tasks,
-  categories,
-  onAddTask,
-  onRemoveTask,
-  onScheduleTask,
-  onAddCategory,
-  onClose,
-}) => {
-  const [showAddTask, setShowAddTask] = useState(false);
-  const [taskName, setTaskName] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [importance, setImportance] = useState(3);
-  const [duration, setDuration] = useState(1);
-  const [durationUnit, setDurationUnit] = useState<'hours' | 'days'>('hours');
-  const [isMovable, setIsMovable] = useState(true);
-  const [schedulingTaskId, setSchedulingTaskId] = useState<string | null>(null);
-  const [scheduleDate, setScheduleDate] = useState('');
-  const [scheduleTime, setScheduleTime] = useState('09:00');
+interface TasksSidebarProps {
+  darkMode: boolean;
+}
 
-  const handleAddTask = () => {
-    if (!taskName.trim() || !selectedCategory) return;
+const TasksSidebar: React.FC<TasksSidebarProps> = ({ darkMode }) => {
+  const [tasks, setTasks] = useState<Task[]>([
+    { id: '1', title: 'Review project proposal', completed: false },
+    { id: '2', title: 'Schedule team meeting', completed: true },
+    { id: '3', title: 'Update documentation', completed: false },
+  ]);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
 
-    const newTask: Task = {
-      id: `task-${Date.now()}`,
-      name: taskName.trim(),
-      category: selectedCategory,
-      importance,
-      duration,
-      durationUnit,
-      isMovable,
-      isImmovable: !isMovable,
-      isLockedIn: false,
-    };
-
-    onAddTask(newTask);
-    setTaskName('');
-    setSelectedCategory(null);
-    setImportance(3);
-    setDuration(1);
-    setShowAddTask(false);
+  const addTask = () => {
+    if (newTaskTitle.trim()) {
+      const newTask: Task = {
+        id: Date.now().toString(),
+        title: newTaskTitle,
+        completed: false,
+      };
+      setTasks([...tasks, newTask]);
+      setNewTaskTitle('');
+    }
   };
 
-  const handleScheduleTask = (taskId: string) => {
-    if (!scheduleDate || !scheduleTime) return;
-    onScheduleTask(taskId, new Date(scheduleDate), scheduleTime);
-    setSchedulingTaskId(null);
-    setScheduleDate('');
-    setScheduleTime('09:00');
+  const toggleTask = (id: string) => {
+    setTasks(tasks.map(task =>
+      task.id === id ? { ...task, completed: !task.completed } : task
+    ));
   };
 
   return (
-    <div className="w-80 glass-strong h-full flex flex-col border-l border-white border-opacity-20">
-      <div className="p-4 border-b border-white border-opacity-20 flex items-center justify-between">
-        <h3 className="text-xl font-bold text-white">Unscheduled Tasks</h3>
-        <button
-          onClick={onClose}
-          className="glass-button rounded-xl p-2"
-        >
-          <X className="w-5 h-5 text-white" strokeWidth={2} />
-        </button>
+    <div className={`h-full flex flex-col ${
+      darkMode ? 'bg-gray-800 bg-opacity-95' : 'bg-white bg-opacity-90'
+    }`}>
+      {/* Header */}
+      <div className={`p-4 border-b ${
+        darkMode ? 'border-gray-700' : 'border-purple-100'
+      }`}>
+        <h2 className={`text-lg font-bold ${
+          darkMode ? 'text-white' : 'text-gray-900'
+        }`}>Tasks</h2>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {tasks.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-white text-sm">No unscheduled tasks</p>
-          </div>
-        ) : (
-          tasks.map((task) => (
-            <div
-              key={task.id}
-              className="glass-card rounded-xl p-3 space-y-2"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h4 className="font-semibold text-black">{task.name}</h4>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span
-                      className="px-2 py-1 rounded-lg text-xs font-semibold text-white"
-                      style={{ backgroundColor: task.category.color }}
-                    >
-                      {task.category.name}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      {[...Array(task.importance)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className="w-3 h-3 fill-yellow-400 text-yellow-400"
-                          strokeWidth={2}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 mt-2 text-xs text-black">
-                    <Clock className="w-3 h-3" strokeWidth={2} />
-                    <span>
-                      {task.duration} {task.durationUnit}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => onRemoveTask(task.id)}
-                  className="glass-button rounded-lg p-1"
-                >
-                  <Trash2 className="w-4 h-4 text-black" strokeWidth={2} />
-                </button>
-              </div>
-
-              {schedulingTaskId === task.id ? (
-                <div className="space-y-2 pt-2 border-t border-black border-opacity-10">
-                  <input
-                    type="date"
-                    value={scheduleDate}
-                    onChange={(e) => setScheduleDate(e.target.value)}
-                    className="w-full glass-input rounded-lg p-2 text-black text-sm"
-                  />
-                  <input
-                    type="time"
-                    value={scheduleTime}
-                    onChange={(e) => setScheduleTime(e.target.value)}
-                    className="w-full glass-input rounded-lg p-2 text-black text-sm"
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleScheduleTask(task.id)}
-                      className="flex-1 glass-button rounded-lg p-2 text-xs font-semibold text-black"
-                    >
-                      Confirm
-                    </button>
-                    <button
-                      onClick={() => setSchedulingTaskId(null)}
-                      className="flex-1 glass-button rounded-lg p-2 text-xs font-semibold text-black"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setSchedulingTaskId(task.id)}
-                  className="w-full glass-button rounded-lg p-2 flex items-center justify-center gap-2 text-black font-semibold text-sm"
-                >
-                  <Calendar className="w-4 h-4" strokeWidth={2} />
-                  Schedule
-                </button>
-              )}
-            </div>
-          ))
-        )}
-      </div>
-
-      <div className="p-4 border-t border-white border-opacity-20">
-        {!showAddTask ? (
+      {/* Tasks List */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        {tasks.map((task) => (
           <button
-            onClick={() => setShowAddTask(true)}
-            className="w-full glass-button rounded-xl p-3 flex items-center justify-center gap-2 text-white font-semibold"
+            key={task.id}
+            onClick={() => toggleTask(task.id)}
+            className={`w-full p-3 rounded-lg transition-all flex items-center gap-3 text-left ${
+              darkMode 
+                ? 'hover:bg-gray-700' 
+                : 'hover:bg-purple-50'
+            }`}
           >
-            <Plus className="w-5 h-5" strokeWidth={2} />
-            Add Task
+            {task.completed ? (
+              <div className="flex-shrink-0 w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+                <Check className="w-3 h-3 text-white" strokeWidth={3} />
+              </div>
+            ) : (
+              <Circle className={`flex-shrink-0 w-5 h-5 ${
+                darkMode ? 'text-gray-500' : 'text-gray-400'
+              }`} strokeWidth={2} />
+            )}
+            <span className={`flex-1 text-sm ${
+              task.completed 
+                ? darkMode ? 'line-through text-gray-500' : 'line-through text-gray-400'
+                : darkMode ? 'text-gray-200' : 'text-gray-700'
+            }`}>
+              {task.title}
+            </span>
           </button>
-        ) : (
-          <div className="space-y-3">
-            <input
-              type="text"
-              value={taskName}
-              onChange={(e) => setTaskName(e.target.value)}
-              placeholder="Task name"
-              className="w-full glass-input rounded-xl p-3 text-black"
-            />
-            <select
-              value={selectedCategory?.id || ''}
-              onChange={(e) => {
-                const category = categories.find(c => c.id === e.target.value);
-                setSelectedCategory(category || null);
-              }}
-              className="w-full glass-input rounded-xl p-3 text-black"
-            >
-              <option value="">Select category</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                value={duration}
-                onChange={(e) => setDuration(Number(e.target.value))}
-                min="1"
-                className="flex-1 glass-input rounded-xl p-3 text-black"
-              />
-              <select
-                value={durationUnit}
-                onChange={(e) => setDurationUnit(e.target.value as 'hours' | 'days')}
-                className="glass-input rounded-xl p-3 text-black"
-              >
-                <option value="hours">Hours</option>
-                <option value="days">Days</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  onClick={() => setImportance(star)}
-                  className="transition-transform hover:scale-110"
-                >
-                  <Star
-                    className={`w-5 h-5 ${
-                      star <= importance
-                        ? 'fill-yellow-400 text-yellow-400'
-                        : 'text-gray-400'
-                    }`}
-                    strokeWidth={2}
-                  />
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleAddTask}
-                disabled={!taskName.trim() || !selectedCategory}
-                className="flex-1 glass-button rounded-xl p-3 text-white font-semibold disabled:opacity-50"
-              >
-                Add
-              </button>
-              <button
-                onClick={() => setShowAddTask(false)}
-                className="flex-1 glass-button rounded-xl p-3 text-white font-semibold"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
+        ))}
+      </div>
+
+      {/* Add Task Input */}
+      <div className={`p-4 border-t ${
+        darkMode ? 'border-gray-700' : 'border-purple-100'
+      }`}>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newTaskTitle}
+            onChange={(e) => setNewTaskTitle(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && addTask()}
+            placeholder="Add a new task..."
+            className={`flex-1 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 ${
+              darkMode 
+                ? 'bg-gray-700 border border-gray-600 text-gray-200 placeholder-gray-500' 
+                : 'bg-white border border-gray-300 text-gray-900 placeholder-gray-500'
+            }`}
+          />
+          <button
+            onClick={addTask}
+            className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition-all shadow-md"
+          >
+            <Plus className="w-5 h-5 text-white" strokeWidth={2} />
+          </button>
+        </div>
       </div>
     </div>
   );

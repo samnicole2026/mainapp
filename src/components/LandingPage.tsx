@@ -1,39 +1,43 @@
 import React from 'react';
-import { Calendar, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 interface LandingPageProps {
   onStartScheduling: () => void;
+  darkMode: boolean;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onStartScheduling }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onStartScheduling, darkMode }) => {
   return (
-    <div className="min-h-screen flex items-center justify-center p-8">
-      <div className="max-w-4xl w-full text-center">
-        <div className="flex items-center justify-center gap-4 mb-8">
-          <div className="glass-card rounded-2xl p-5 shadow-lg">
-            <Calendar className="w-16 h-16 text-purple-600" strokeWidth={2} />
+    <div className={`h-full flex items-center justify-center p-8 ${
+      darkMode ? 'bg-gray-900' : ''
+    }`}>
+      <div className="max-w-2xl text-center space-y-8">
+        {/* Logo */}
+        <div className="flex justify-center">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500 flex items-center justify-center shadow-2xl">
+            <Sparkles className="w-10 h-10 text-white" strokeWidth={2} />
           </div>
-          <h1 className="text-7xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            Plan-elope
-          </h1>
-        </div>
-        
-        <div className="mb-12 space-y-4">
-          <div className="flex items-center justify-center gap-2">
-            <Sparkles className="w-6 h-6 text-purple-500" strokeWidth={2} />
-            <p className="text-3xl font-semibold text-gray-800">
-              Stop being busy. Start being intentional.
-            </p>
-            <Sparkles className="w-6 h-6 text-pink-500" strokeWidth={2} />
-          </div>
-          <p className="text-xl text-gray-600">
-            Your AI-powered life planner that aligns your schedule with your goals.
-          </p>
         </div>
 
+        {/* Tagline */}
+        <h1 className={`text-5xl font-bold ${
+          darkMode ? 'text-white' : 'text-gray-900'
+        }`}>
+          Plan-elope
+        </h1>
+
+        {/* Description */}
+        <p className={`text-xl leading-relaxed ${
+          darkMode ? 'text-gray-300' : 'text-gray-700'
+        }`}>
+          Your AI-powered life planner that aligns your schedule with your goals.
+          Tell us what you need to do, and we'll help you make it happen.
+        </p>
+
+        {/* CTA Button */}
         <button
           onClick={onStartScheduling}
-          className="glass-button rounded-2xl px-16 py-5 text-2xl font-semibold text-purple-700 hover:scale-105 transition-all shadow-lg hover:shadow-xl"
+          className="px-8 py-4 rounded-xl bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 text-white font-semibold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all"
         >
           Start Scheduling
         </button>

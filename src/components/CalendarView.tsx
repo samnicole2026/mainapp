@@ -1,192 +1,162 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import { CalendarEvent, Category, ViewMode } from '../types';
-import EventModal from './EventModal';
-import DailyView from './calendar/DailyView';
-import WeeklyView from './calendar/WeeklyView';
-import MonthlyView from './calendar/MonthlyView';
-import YearlyView from './calendar/YearlyView';
 
 interface CalendarViewProps {
-  events: CalendarEvent[];
-  categories: Category[];
-  onAddEvent: (event: CalendarEvent) => void;
-  onRemoveEvent: (eventId: string) => void;
-  onAddCategory: (name: string, color: string) => Category;
+  darkMode: boolean;
 }
 
-const CalendarView: React.FC<CalendarViewProps> = ({
-  events,
-  categories,
-  onAddEvent,
-  onRemoveEvent,
-  onAddCategory,
-}) => {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<ViewMode>('monthly');
-  const [showEventModal, setShowEventModal] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+const CalendarView: React.FC<CalendarViewProps> = ({ darkMode }) => {
+  const [currentDate, setCurrentDate] = useState(new Date(2026, 5, 1)); // June 2026
+  const [viewMode, setViewMode] = useState<'monthly' | 'weekly' | 'daily'>('monthly');
 
-  const handlePrevious = () => {
-    const newDate = new Date(currentDate);
-    switch (viewMode) {
-      case 'daily':
-        newDate.setDate(newDate.getDate() - 1);
-        break;
-      case 'weekly':
-        newDate.setDate(newDate.getDate() - 7);
-        break;
-      case 'monthly':
-        newDate.setMonth(newDate.getMonth() - 1);
-        break;
-      case 'yearly':
-        newDate.setFullYear(newDate.getFullYear() - 1);
-        break;
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  const getDaysInMonth = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+
+    const days = [];
+    
+    // Add empty cells for days before the first of the month
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(null);
     }
-    setCurrentDate(newDate);
-  };
-
-  const handleNext = () => {
-    const newDate = new Date(currentDate);
-    switch (viewMode) {
-      case 'daily':
-        newDate.setDate(newDate.getDate() + 1);
-        break;
-      case 'weekly':
-        newDate.setDate(newDate.getDate() + 7);
-        break;
-      case 'monthly':
-        newDate.setMonth(newDate.getMonth() + 1);
-        break;
-      case 'yearly':
-        newDate.setFullYear(newDate.getFullYear() + 1);
-        break;
+    
+    // Add the days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(day);
     }
-    setCurrentDate(newDate);
+    
+    return days;
   };
 
-  const getDateDisplay = () => {
-    switch (viewMode) {
-      case 'daily':
-        return currentDate.toLocaleDateString('en-US', { 
-          weekday: 'long',
-          month: 'long',
-          day: 'numeric',
-          year: 'numeric'
-        });
-      case 'weekly':
-        const weekStart = new Date(currentDate);
-        weekStart.setDate(currentDate.getDate() - currentDate.getDay());
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekStart.getDate() + 6);
-        return `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-      case 'monthly':
-        return currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-      case 'yearly':
-        return currentDate.getFullYear().toString();
-    }
+  const days = getDaysInMonth(currentDate);
+
+  const goToPreviousMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   };
 
-  const handleAddEvent = (date?: Date) => {
-    setSelectedDate(date || null);
-    setShowEventModal(true);
-  };
-
-  const handleMonthClick = (monthIndex: number) => {
-    const newDate = new Date(currentDate);
-    newDate.setMonth(monthIndex);
-    setCurrentDate(newDate);
-    setViewMode('monthly');
+  const goToNextMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
   return (
-    <div className="h-full flex flex-col bg-white">
-      <div className="bg-white p-4 border-b border-gray-200 shadow-sm">
+    <div className={`h-full flex flex-col ${
+      darkMode ? 'bg-gray-900' : 'bg-white'
+    }`}>
+      {/* Calendar Header */}
+      <div className={`p-4 border-b ${
+        darkMode ? 'border-gray-700' : 'border-gray-200'
+      }`}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">Your Schedule</h2>
+          <h2 className={`text-lg font-bold ${
+            darkMode ? 'text-white' : 'text-gray-900'
+          }`}>
+            Your Schedule
+          </h2>
           <div className="flex items-center gap-2">
+            {/* View Mode Dropdown */}
             <select
               value={viewMode}
-              onChange={(e) => setViewMode(e.target.value as ViewMode)}
-              className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              onChange={(e) => setViewMode(e.target.value as 'monthly' | 'weekly' | 'daily')}
+              className={`px-3 py-1.5 rounded-lg border font-medium text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                darkMode
+                  ? 'bg-gray-800 border-gray-600 text-gray-200'
+                  : 'bg-white border-gray-300 text-gray-700'
+              }`}
             >
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
               <option value="monthly">Monthly</option>
-              <option value="yearly">Yearly</option>
+              <option value="weekly">Weekly</option>
+              <option value="daily">Daily</option>
             </select>
+
+            {/* Add Event Button */}
             <button
-              onClick={() => handleAddEvent()}
-              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-lg px-4 py-2 font-semibold flex items-center gap-2 shadow-md transition-all"
+              className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium text-sm flex items-center gap-1.5 shadow-sm hover:shadow-md transition-all"
             >
-              <Plus className="w-5 h-5" strokeWidth={2} />
+              <Plus className="w-4 h-4" strokeWidth={2.5} />
               Add Event
             </button>
           </div>
         </div>
 
+        {/* Month Navigation */}
         <div className="flex items-center justify-between">
           <button
-            onClick={handlePrevious}
-            className="bg-gray-100 hover:bg-gray-200 rounded-lg p-2 transition-colors"
+            onClick={goToPreviousMonth}
+            className={`p-1.5 rounded-lg transition-all ${
+              darkMode
+                ? 'hover:bg-gray-800 text-gray-300'
+                : 'hover:bg-gray-100 text-gray-600'
+            }`}
           >
-            <ChevronLeft className="w-6 h-6 text-gray-700" strokeWidth={2} />
+            <ChevronLeft className="w-5 h-5" strokeWidth={2} />
           </button>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-gray-900">{getDateDisplay()}</p>
-          </div>
+
+          <h3 className={`text-base font-semibold ${
+            darkMode ? 'text-white' : 'text-gray-900'
+          }`}>
+            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+          </h3>
+
           <button
-            onClick={handleNext}
-            className="bg-gray-100 hover:bg-gray-200 rounded-lg p-2 transition-colors"
+            onClick={goToNextMonth}
+            className={`p-1.5 rounded-lg transition-all ${
+              darkMode
+                ? 'hover:bg-gray-800 text-gray-300'
+                : 'hover:bg-gray-100 text-gray-600'
+            }`}
           >
-            <ChevronRight className="w-6 h-6 text-gray-700" strokeWidth={2} />
+            <ChevronRight className="w-5 h-5" strokeWidth={2} />
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto bg-gray-50">
-        {viewMode === 'daily' && (
-          <DailyView
-            currentDate={currentDate}
-            events={events}
-            onAddEvent={handleAddEvent}
-            onRemoveEvent={onRemoveEvent}
-          />
-        )}
-        {viewMode === 'weekly' && (
-          <WeeklyView
-            currentDate={currentDate}
-            events={events}
-            onAddEvent={handleAddEvent}
-            onRemoveEvent={onRemoveEvent}
-          />
-        )}
-        {viewMode === 'monthly' && (
-          <MonthlyView
-            currentDate={currentDate}
-            events={events}
-            onAddEvent={handleAddEvent}
-            onRemoveEvent={onRemoveEvent}
-          />
-        )}
-        {viewMode === 'yearly' && (
-          <YearlyView
-            currentDate={currentDate}
-            events={events}
-            onMonthClick={handleMonthClick}
-          />
-        )}
-      </div>
+      {/* Calendar Grid */}
+      <div className="flex-1 overflow-y-auto p-4">
+        {/* Day Labels */}
+        <div className="grid grid-cols-7 gap-2 mb-2">
+          {daysOfWeek.map((day) => (
+            <div
+              key={day}
+              className={`text-center text-xs font-semibold py-2 ${
+                darkMode ? 'text-gray-400' : 'text-gray-600'
+              }`}
+            >
+              {day}
+            </div>
+          ))}
+        </div>
 
-      {showEventModal && (
-        <EventModal
-          categories={categories}
-          selectedDate={selectedDate}
-          onClose={() => setShowEventModal(false)}
-          onSave={onAddEvent}
-          onAddCategory={onAddCategory}
-        />
-      )}
+        {/* Calendar Days */}
+        <div className="grid grid-cols-7 gap-2">
+          {days.map((day, index) => (
+            <div
+              key={index}
+              className={`aspect-square flex items-center justify-center rounded-lg text-sm font-medium transition-all ${
+                day === null
+                  ? ''
+                  : day === 12
+                    ? 'bg-purple-100 border-2 border-purple-500 text-purple-700 cursor-pointer hover:bg-purple-200'
+                    : darkMode
+                      ? 'text-gray-300 hover:bg-gray-800 cursor-pointer'
+                      : 'text-gray-700 hover:bg-gray-100 cursor-pointer'
+              }`}
+            >
+              {day}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

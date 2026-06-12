@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Plus, MessageSquare, User, LogOut } from 'lucide-react';
+import { MessageSquare, Calendar, Plus, User, Moon, Sun, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { User as UserType } from '../types';
 
 interface Chat {
@@ -17,6 +17,8 @@ interface SidebarProps {
   onNewChat: () => void;
   onSelectChat: (chatId: string) => void;
   onViewCalendars: () => void;
+  darkMode: boolean;
+  onToggleDarkMode: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -27,132 +29,169 @@ const Sidebar: React.FC<SidebarProps> = ({
   chats,
   onNewChat,
   onSelectChat,
-  onViewCalendars,
+  darkMode,
+  onToggleDarkMode,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true); // DEFAULT = minimized
 
   return (
-    <div
-      className={`glass-strong h-full flex flex-col transition-all duration-300 shadow-lg ${
-        isExpanded ? 'w-64' : 'w-16'
-      }`}
-    >
+    <div className={`${isCollapsed ? 'w-16' : 'w-64'} h-full flex flex-col transition-all duration-300 ${
+      darkMode ? 'bg-gray-900 border-r border-gray-700' : 'bg-white border-r border-gray-200'
+    }`}>
       {/* Collapse/Expand Button */}
-      <div className="p-2 border-b border-purple-100">
+      <div className="p-4 flex justify-end">
         <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full p-2 rounded-lg hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all flex items-center justify-center group"
-          title={isExpanded ? 'Minimize' : 'Expand'}
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className={`p-2 rounded-lg transition-all ${
+            darkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'
+          }`}
+          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {isExpanded ? (
-            <ChevronLeft className="w-5 h-5 text-purple-600 group-hover:text-purple-700" strokeWidth={2} />
+          {isCollapsed ? (
+            <ChevronRight className="w-5 h-5" strokeWidth={2} />
           ) : (
-            <ChevronRight className="w-5 h-5 text-blue-600 group-hover:text-blue-700" strokeWidth={2} />
+            <ChevronLeft className="w-5 h-5" strokeWidth={2} />
           )}
         </button>
       </div>
 
-      {/* Calendars Button */}
-      <div className="p-2 border-b border-purple-100">
+      {/* Calendars Button - ABOVE New Chat */}
+      <div className="px-4 mb-2">
         <button
-          onClick={onViewCalendars}
-          className="w-full p-2 rounded-lg hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all flex items-center gap-3 group"
-          title="View All Calendars"
+          className={`w-full py-2.5 rounded-lg flex items-center gap-2 shadow-md hover:shadow-lg transition-all ${
+            isCollapsed ? 'justify-center' : 'px-3'
+          } bg-gradient-to-br from-blue-400 to-purple-400 hover:from-blue-500 hover:to-purple-500`}
+          title="Calendars"
         >
-          <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 shadow-md group-hover:shadow-lg transition-shadow">
-            <Calendar className="w-4 h-4 text-white" strokeWidth={2} />
-          </div>
-          {isExpanded && <span className="text-sm font-semibold text-gray-800">Calendars</span>}
+          <Calendar className="w-5 h-5 text-white flex-shrink-0" strokeWidth={2} />
+          {!isCollapsed && <span className={`font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Calendars</span>}
         </button>
       </div>
 
       {/* New Chat Button */}
-      <div className="p-2 border-b border-purple-100">
+      <div className="px-4 mb-4">
         <button
           onClick={onNewChat}
-          className="w-full p-2 rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all flex items-center gap-3 group"
+          className={`w-full py-2.5 rounded-lg flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all bg-gradient-to-br from-purple-400 to-pink-400 hover:from-purple-500 hover:to-pink-500`}
           title="New Chat"
         >
-          <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 shadow-md group-hover:shadow-lg transition-shadow">
-            <Plus className="w-4 h-4 text-white" strokeWidth={2} />
-          </div>
-          {isExpanded && <span className="text-sm font-semibold text-gray-800">New Chat</span>}
+          <Plus className="w-5 h-5 text-white" strokeWidth={2.5} />
+          {!isCollapsed && <span className={`font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>New Chat</span>}
         </button>
       </div>
 
-      {/* Chats Section */}
-      <div className="flex-1 overflow-y-auto p-2">
-        {isExpanded && (
-          <div className="mb-2 px-2">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Chats
-            </span>
-          </div>
-        )}
-        <div className="space-y-1">
-          {chats.map((chat) => (
-            <button
-              key={chat.id}
-              onClick={() => onSelectChat(chat.id)}
-              className={`w-full p-2 rounded-lg transition-all flex items-center gap-3 group ${
-                currentChatId === chat.id
-                  ? 'bg-gradient-to-r from-purple-100 to-blue-100 shadow-sm'
-                  : 'hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50'
-              }`}
-              title={isExpanded ? undefined : chat.title}
-            >
-              <div className={`p-1 rounded-lg transition-all ${
-                currentChatId === chat.id
-                  ? 'bg-gradient-to-br from-purple-500 to-blue-500 shadow-md'
-                  : 'bg-gradient-to-br from-purple-400 to-blue-400 opacity-70 group-hover:opacity-100'
+      {/* Chat List */}
+      <div className="flex-1 overflow-y-auto px-4 space-y-2">
+        {chats.map((chat) => (
+          <button
+            key={chat.id}
+            onClick={() => onSelectChat(chat.id)}
+            className={`w-full py-2.5 rounded-lg flex items-center gap-3 transition-all ${
+              currentChatId === chat.id
+                ? 'bg-gradient-to-br from-purple-400 to-pink-400 shadow-md'
+                : darkMode
+                  ? 'bg-gray-800 hover:bg-gray-700'
+                  : 'bg-gray-200 hover:bg-gray-300'
+            } ${isCollapsed ? 'justify-center' : 'px-3'}`}
+            title={chat.title}
+          >
+            <MessageSquare 
+              className={`w-5 h-5 flex-shrink-0 ${
+                currentChatId === chat.id ? 'text-white' : darkMode ? 'text-gray-400' : 'text-gray-600'
+              }`} 
+              strokeWidth={2} 
+            />
+            {!isCollapsed && (
+              <span className={`text-sm font-medium truncate ${
+                currentChatId === chat.id ? 'text-white' : darkMode ? 'text-gray-300' : 'text-gray-700'
               }`}>
-                <MessageSquare className="w-4 h-4 text-white" strokeWidth={2} />
-              </div>
-              {isExpanded && (
-                <span className={`text-sm truncate font-medium ${
-                  currentChatId === chat.id ? 'text-purple-700' : 'text-gray-700'
-                }`}>
-                  {chat.title}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+                {chat.title}
+              </span>
+            )}
+          </button>
+        ))}
       </div>
 
-      {/* Sign In / User Profile */}
-      <div className="p-2 border-t border-purple-100 relative">
+      {/* User Profile / Sign In */}
+      <div className="px-4 pb-4 relative">
         {user ? (
           <div>
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="w-full p-2 rounded-lg hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all flex items-center gap-3 group"
+              className={`w-full py-2.5 rounded-lg flex items-center gap-2 shadow-md hover:shadow-lg transition-all ${
+                isCollapsed ? 'justify-center' : 'px-3'
+              } bg-gradient-to-br from-purple-400 to-pink-400 hover:from-purple-500 hover:to-pink-500`}
+              title={user.name}
             >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0 shadow-md group-hover:shadow-lg transition-shadow">
-                <span className="text-white font-bold text-sm">
+              <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center flex-shrink-0">
+                <span className="text-purple-600 font-bold text-xs">
                   {user.name.charAt(0).toUpperCase()}
                 </span>
               </div>
-              {isExpanded && (
-                <span className="text-sm font-semibold text-gray-800 truncate">{user.name}</span>
+              {!isCollapsed && (
+                <span className={`font-medium truncate ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{user.name}</span>
               )}
             </button>
 
             {/* User Menu Dropdown */}
             {showUserMenu && (
-              <div className="absolute bottom-full left-2 right-2 mb-2 glass-strong rounded-lg shadow-xl overflow-hidden">
+              <div className={`absolute bottom-full left-4 right-4 mb-2 rounded-lg shadow-xl overflow-hidden ${
+                darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+              }`}>
+                {/* Dark Mode Toggle */}
+                <button
+                  onClick={() => {
+                    onToggleDarkMode();
+                  }}
+                  className={`w-full p-3 transition-all flex items-center justify-between ${
+                    darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {darkMode ? (
+                      <Moon className="w-4 h-4 text-purple-400" strokeWidth={2} />
+                    ) : (
+                      <Sun className="w-4 h-4 text-purple-400" strokeWidth={2} />
+                    )}
+                    <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                      {darkMode ? 'Dark Mode' : 'Light Mode'}
+                    </span>
+                  </div>
+                  
+                  {/* Animated Toggle Switch */}
+                  <div className={`relative w-10 h-5 rounded-full transition-colors ${
+                    darkMode ? 'bg-purple-400' : 'bg-gray-300'
+                  }`}>
+                    <div
+                      className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-300 ${
+                        darkMode ? 'translate-x-5' : 'translate-x-0.5'
+                      }`}
+                    />
+                  </div>
+                </button>
+
+                {/* Settings Button */}
+                <button
+                  className={`w-full p-3 transition-all flex items-center gap-2 ${
+                    darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                  }`}
+                >
+                  <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Settings</span>
+                </button>
+
+                {/* Log Out Button */}
                 <button
                   onClick={() => {
                     onSignOut();
                     setShowUserMenu(false);
                   }}
-                  className="w-full p-3 hover:bg-gradient-to-r hover:from-pink-50 hover:to-purple-50 transition-all flex items-center gap-3 group"
+                  className={`w-full p-3 transition-all flex items-center gap-2 ${
+                    darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                  }`}
                 >
-                  <div className="p-1 rounded-lg bg-gradient-to-br from-pink-500 to-purple-500 shadow-sm">
-                    <LogOut className="w-4 h-4 text-white" strokeWidth={2} />
-                  </div>
-                  <span className="text-sm font-semibold text-gray-800">Log Out</span>
+                  <LogOut className="w-4 h-4 text-pink-400" strokeWidth={2} />
+                  <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Log Out</span>
                 </button>
               </div>
             )}
@@ -160,13 +199,13 @@ const Sidebar: React.FC<SidebarProps> = ({
         ) : (
           <button
             onClick={onSignIn}
-            className="w-full p-2 rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all flex items-center gap-3 group"
+            className={`w-full py-2.5 rounded-lg flex items-center gap-2 shadow-md hover:shadow-lg transition-all ${
+              isCollapsed ? 'justify-center' : 'px-3'
+            } bg-gradient-to-br from-purple-400 to-pink-400 hover:from-purple-500 hover:to-pink-500`}
             title="Sign In"
           >
-            <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 shadow-md group-hover:shadow-lg transition-shadow">
-              <User className="w-4 h-4 text-white" strokeWidth={2} />
-            </div>
-            {isExpanded && <span className="text-sm font-semibold text-gray-800">Sign In</span>}
+            <User className="w-5 h-5 text-white flex-shrink-0" strokeWidth={2} />
+            {!isCollapsed && <span className={`font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Sign In</span>}
           </button>
         )}
       </div>

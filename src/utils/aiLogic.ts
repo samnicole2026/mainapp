@@ -20,7 +20,19 @@ export interface UserContext {
     title: string;
     date: Date;
     time?: string;
+    isConfirmed: boolean;
   }>;
+  casualMentions: string[];
+  energyPatterns: {
+    peakHours?: string;
+    lowEnergyWindows?: string;
+    preferredWorkStyle?: string;
+  };
+  patterns: {
+    repeatedConcerns: string[];
+    tasksPushedBack: string[];
+    timePreferences: string[];
+  };
 }
 
 export interface ConversationMemory {
@@ -30,6 +42,8 @@ export interface ConversationMemory {
   userResponseStyle: 'detailed' | 'brief' | 'mixed';
   conversationEnergy: 'high' | 'medium' | 'low';
   messageCount: number;
+  lastSchedulePresented?: Date;
+  userWordsUsed: string[];
 }
 
 export interface ConversationState {
@@ -39,6 +53,8 @@ export interface ConversationState {
   needsFollowUp: boolean;
   userContext: UserContext;
   memory: ConversationMemory;
+  isReturningUser: boolean;
+  previousScheduleAccepted: boolean;
 }
 
 export class AILogic {
@@ -57,7 +73,14 @@ export class AILogic {
         constraints: [],
         preferences: [],
         timeCommitments: [],
-        fixedEvents: []
+        fixedEvents: [],
+        casualMentions: [],
+        energyPatterns: {},
+        patterns: {
+          repeatedConcerns: [],
+          tasksPushedBack: [],
+          timePreferences: []
+        }
       },
       memory: {
         phrasesUsed: new Set(),
@@ -65,8 +88,11 @@ export class AILogic {
         topicsDiscussed: new Set(),
         userResponseStyle: 'mixed',
         conversationEnergy: 'medium',
-        messageCount: 0
-      }
+        messageCount: 0,
+        userWordsUsed: []
+      },
+      isReturningUser: false,
+      previousScheduleAccepted: false
     };
   }
 
@@ -90,6 +116,66 @@ export class AILogic {
     this.conversationState.memory.questionsAsked.add(normalized);
   }
 
+  private captureUserWords(message: string): void {
+    // Extract key phrases the user uses
+    const emotionalWords = ['swamped', 'overwhelmed', 'tired', 'exhausted', 'stressed', 'behind', 'struggling'];
+    const lowerMessage = message.toLowerCase();
+    
+    emotionalWords.forEach(word => {
+      if (lowerMessage.includes(word) && !this.conversationState.memory.userWordsUsed.includes(word)) {
+        this.conversationState.memory.userWordsUsed.push(word);
+      }
+    });
+  }
+
+  private detectCasualMentions(message: string): void {
+    const lowerMessage = message.toLowerCase();
+    
+    // Detect casual time mentions
+    const casualTimePatterns = [
+      /have.*thing.*(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i,
+      /busy.*(morning|afternoon|evening|night)/i,
+      /(morning|afternoon|evening|night).*busy/i,
+      /can't.*(morning|afternoon|evening)/i
+    ];
+
+    casualTimePatterns.forEach(pattern => {
+      const match = message.match(pattern);
+      if (match) {
+        this.conversationState.userContext.casualMentions.push(match[0]);
+      }
+    });
+
+    // Detect energy preferences
+    if (lowerMessage.includes('morning person') || lowerMessage.includes('early bird')) {
+      this.conversationState.userContext.energyPatterns.peakHours = 'morning';
+    } else if (lowerMessage.includes('night owl') || lowerMessage.includes('evening person')) {
+      this.conversationState.userContext.energyPatterns.peakHours = 'evening';
+    }
+
+    // Detect work style preferences
+    if (lowerMessage.includes('long stretch') || lowerMessage.includes('deep focus')) {
+      this.conversationState.userContext.energyPatterns.preferredWorkStyle = 'long-blocks';
+    } else if (lowerMessage.includes('short chunks') || lowerMessage.includes('frequent breaks')) {
+      this.conversationState.userContext.energyPatterns.preferredWorkStyle = 'short-blocks';
+    }
+  }
+
+  private detectPatterns(message: string): void {
+    const lowerMessage = message.toLowerCase();
+
+    // Detect repeated concerns
+    const concerns = ['behind', 'late', 'overdue', 'missed', 'forgot'];
+    concerns.forEach(concern => {
+      if (lowerMessage.includes(concern)) {
+        const existing = this.conversationState.userContext.patterns.repeatedConcerns.filter(c => c.includes(concern));
+        if (existing.length === 0) {
+          this.conversationState.userContext.patterns.repeatedConcerns.push(concern);
+        }
+      }
+    });
+  }
+
   private analyzeUserResponseStyle(message: string): void {
     const wordCount = message.split(/\s+/).length;
     this.conversationState.memory.messageCount++;
@@ -107,6 +193,18 @@ export class AILogic {
   }
 
   private getVariedGreeting(): string {
+    if (this.conversationState.isReturningUser) {
+      const returningGreetings = [
+        "Hey! Good to see you back. Last time we talked, you mentioned you were working on getting your schedule under control. How did that go?",
+        "Welcome back! I remember you were trying to balance a lot. How's your week been treating you?",
+        "Hi again! Last time you seemed pretty swamped. Did things settle down at all, or are we still in the thick of it?",
+        "Hey there! I've been thinking about the schedule we put together last time. How did it actually work out in practice?"
+      ];
+      const selected = returningGreetings[Math.floor(Math.random() * returningGreetings.length)];
+      this.markPhraseUsed(selected);
+      return selected;
+    }
+
     const greetings = [
       "Hi! I'm PLANelope, your AI scheduling companion. I'm here to help you build a schedule that actually works for your life — not just fill up a calendar. Let's start with what matters to you. What are your main goals or priorities this week?",
       "Hey there! I'm PLANelope. Instead of just cramming tasks into a calendar, I want to help you design a week that aligns with what actually matters to you. What's been on your mind lately?",
@@ -124,6 +222,7 @@ export class AILogic {
   classifyResponse(userMessage: string): ResponseType {
     const message = userMessage.toLowerCase();
 
+    // TYPE 1: Concrete task/event
     const timePatterns = [
       /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/,
       /\b\d{1,2}(am|pm|:\d{2})\b/,
@@ -134,6 +233,7 @@ export class AILogic {
       return 'concrete-task';
     }
 
+    // TYPE 2: Time-based intention
     const timeIntentionPatterns = [
       /\b\d+\s*(hours?|hrs?)\b/,
       /\bspend.*time\b/,
@@ -144,6 +244,7 @@ export class AILogic {
       return 'time-intention';
     }
 
+    // TYPE 3: Aspiration/values
     const aspirationPatterns = [
       /\b(want to|hope to|trying to|goal is)\b/,
       /\b(excel|improve|become|achieve)\b/,
@@ -153,6 +254,7 @@ export class AILogic {
       return 'aspiration';
     }
 
+    // TYPE 5: Emotional context
     const emotionalPatterns = [
       /\b(tired|exhausted|stressed|overwhelmed|anxious)\b/,
       /\b(feeling|felt|been)\b.*\b(rough|hard|difficult|tough)\b/,
@@ -162,6 +264,7 @@ export class AILogic {
       return 'emotional';
     }
 
+    // TYPE 4: Indirect/other
     return 'indirect';
   }
 
@@ -212,23 +315,27 @@ export class AILogic {
         break;
 
       case 'emotional':
+        // Use user's own words when possible
+        const userWord = this.conversationState.memory.userWordsUsed.find(word => message.includes(word));
+        const emotionWord = userWord || 'overwhelmed';
+
         if (message.includes('tired') || message.includes('exhausted')) {
           acknowledgments = [
-            "I hear you. That tells me we need to be realistic about what you can actually handle right now — not pack your schedule too tight. Rest is legitimate and necessary.",
-            "That's important context. When you're running on empty, the schedule needs to support recovery, not add more pressure.",
-            "Understood. We need to build in breathing room, not just fill every gap. You can't pour from an empty cup."
+            `I hear you. That tells me we need to be realistic about what you can actually handle right now — not pack your schedule too tight. Rest is legitimate and necessary.`,
+            `That's important context. When you're running on empty, the schedule needs to support recovery, not add more pressure.`,
+            `Understood. We need to build in breathing room, not just fill every gap. You can't pour from an empty cup.`
           ];
-        } else if (message.includes('behind') || message.includes('overwhelmed')) {
+        } else if (message.includes('behind') || message.includes('overwhelmed') || message.includes('swamped')) {
           acknowledgments = [
-            "That's really important context. It sounds like you need a schedule that helps you catch up without burning out — not one that adds more pressure.",
-            "I hear that. The goal here isn't to pile on more — it's to help you regain some control without making things worse.",
-            "Thank you for being honest about that. We need a plan that reduces overwhelm, not amplifies it."
+            `That's really important context. It sounds like you need a schedule that helps you catch up without burning out — not one that adds more pressure.`,
+            `I hear that. The goal here isn't to pile on more — it's to help you regain some control without making things worse.`,
+            `Thank you for being honest about that. We need a plan that reduces overwhelm, not amplifies it.`
           ];
         } else {
           acknowledgments = [
-            "Thank you for sharing that. How you're feeling matters, and it should inform how we structure your time.",
-            "I appreciate you being open about that. Your emotional state is just as important as your task list.",
-            "That's valuable context. A good schedule accounts for where you're at mentally and emotionally."
+            `Thank you for sharing that. How you're feeling matters, and it should inform how we structure your time.`,
+            `I appreciate you being open about that. Your emotional state is just as important as your task list.`,
+            `That's valuable context. A good schedule accounts for where you're at mentally and emotionally.`
           ];
         }
         break;
@@ -242,10 +349,7 @@ export class AILogic {
         break;
     }
 
-    // Filter out already-used acknowledgments
     const unusedAcknowledgments = acknowledgments.filter(ack => !this.hasUsedPhrase(ack));
-    
-    // If all have been used, reset and use any
     const finalAcknowledgments = unusedAcknowledgments.length > 0 ? unusedAcknowledgments : acknowledgments;
     
     const selected = finalAcknowledgments[Math.floor(Math.random() * finalAcknowledgments.length)];
@@ -255,86 +359,68 @@ export class AILogic {
 
   generateFollowUp(responseType: ResponseType, userMessage: string, context: UserContext): string | null {
     const message = userMessage.toLowerCase();
-    let questions: string[] = [];
 
     // Check what we already know
     const hasGoals = context.goals.length > 0;
     const hasEmotionalContext = context.emotionalState.length > 0;
     const hasTimeCommitments = context.timeCommitments.length > 0;
     const hasFixedEvents = context.fixedEvents.length > 0;
+    const hasEnergyInfo = Object.keys(context.energyPatterns).length > 0;
 
-    switch (responseType) {
-      case 'aspiration':
-        if (message.includes('excel')) {
-          questions = [
-            "Can I ask — when you picture excelling, what does that look like for you specifically? Is it grades, understanding the material, keeping up consistently, or something else?",
-            "What would 'excelling' mean to you in practical terms? Better grades? Deeper understanding? Just staying on top of things?",
-            "When you think about doing well, what's the marker for you? Is it performance, comprehension, or something else entirely?"
-          ];
-        } else {
-          questions = [
-            "What would success look like for you with this?",
-            "How will you know when you're making real progress on this?",
-            "What does 'good enough' look like here — what's the outcome you're aiming for?"
-          ];
-        }
-        break;
+    // If we have enough context, suggest schedule proactively
+    if (this.shouldSuggestSchedule()) {
+      return this.generateScheduleSuggestion();
+    }
 
-      case 'time-intention':
-        if (message.includes('hours')) {
-          questions = [
-            "How do you usually prefer to break up study time? Longer focused sessions, or shorter chunks throughout the day?",
-            "Do you work better in long stretches, or do you prefer spreading things out in smaller blocks?",
-            "What's your ideal session length? Some people need deep focus time, others do better with frequent breaks."
-          ];
-        } else {
-          questions = [
-            "When during the day do you typically have the most energy for this?",
-            "Are you more of a morning person or do you hit your stride later in the day?",
-            "When do you usually feel most focused — early, midday, or evening?"
-          ];
-        }
-        break;
+    // ONE QUESTION AT A TIME - prioritize what's most important
+    let questions: string[] = [];
 
-      case 'emotional':
-        if (!hasGoals) {
-          questions = [
-            "Given how you're feeling, what would be most helpful to focus on this week? Just the essentials, or is there something specific you want to make progress on?",
-            "What's the one thing that would make you feel less behind if you made progress on it?",
-            "If you could only accomplish one thing this week, what would take the most weight off your shoulders?"
-          ];
-        } else {
-          return null; // Don't pile on if we already have goals
-        }
-        break;
-
-      case 'concrete-task':
-        return null; // No follow-up needed for concrete tasks
-
-      case 'indirect':
-        if (!hasGoals) {
-          questions = [
-            "What's most important for you to accomplish this week?",
-            "What's on your plate right now that you really need to make time for?",
-            "If you had to pick one or two things to prioritize this week, what would they be?",
-            "What's been taking up the most mental space for you lately?"
-          ];
-        } else if (!hasFixedEvents && !hasTimeCommitments) {
-          questions = [
-            "Are there any fixed commitments I should know about — classes, meetings, things you can't move?",
-            "What's already locked into your schedule that we need to work around?",
-            "Do you have any non-negotiable time blocks — things that are set in stone?"
-          ];
-        } else {
-          return null; // We have enough context
-        }
-        break;
+    // Priority 1: Energy patterns (if we don't have them yet)
+    if (!hasEnergyInfo && hasTimeCommitments) {
+      questions = [
+        "Are you more of a morning person or do you hit your stride later in the day?",
+        "When during the day do you typically have the most energy?",
+        "Do you work better in long stretches, or do you prefer spreading things out in smaller blocks?"
+      ];
+    }
+    // Priority 2: Fixed events (if we have goals but no structure)
+    else if (hasGoals && !hasFixedEvents && !hasTimeCommitments) {
+      questions = [
+        "Are there any fixed commitments I should know about — classes, meetings, things you can't move?",
+        "What's already locked into your schedule that we need to work around?",
+        "Do you have any non-negotiable time blocks this week?"
+      ];
+    }
+    // Priority 3: Goals (if emotional but no direction)
+    else if (hasEmotionalContext && !hasGoals) {
+      questions = [
+        "Given how you're feeling, what would be most helpful to focus on this week?",
+        "What's the one thing that would make you feel less behind if you made progress on it?",
+        "If you could only accomplish one thing this week, what would take the most weight off your shoulders?"
+      ];
+    }
+    // Priority 4: Clarify aspirations
+    else if (responseType === 'aspiration' && message.includes('excel')) {
+      questions = [
+        "Can I ask — when you picture excelling, what does that look like for you specifically? Is it grades, understanding the material, keeping up consistently, or something else?",
+        "What would 'excelling' mean to you in practical terms? Better grades? Deeper understanding? Just staying on top of things?"
+      ];
+    }
+    // Priority 5: Clarify time intentions
+    else if (responseType === 'time-intention' && message.includes('hours')) {
+      questions = [
+        "How do you usually prefer to break up study time? Longer focused sessions, or shorter chunks throughout the day?",
+        "What's your ideal session length? Some people need deep focus time, others do better with frequent breaks."
+      ];
+    }
+    // Default: Make an observation instead of asking
+    else {
+      return this.generateObservation(context);
     }
 
     // Filter out already-asked questions
     const unaskedQuestions = questions.filter(q => !this.hasAskedQuestion(q));
     
-    // If all questions have been asked, make an observation instead
     if (unaskedQuestions.length === 0) {
       return this.generateObservation(context);
     }
@@ -344,12 +430,27 @@ export class AILogic {
     return selected;
   }
 
+  private generateScheduleSuggestion(): string {
+    const suggestions = [
+      "Okay, based on everything you've told me, here's what I'd do with your week. Tell me what you think.",
+      "Let me think about how to fit that in... Alright, here's a schedule that should work. How does this feel?",
+      "I think I have enough to put something together for you. Here's what I'm thinking — let me know if anything doesn't work."
+    ];
+
+    const selected = suggestions[Math.floor(Math.random() * suggestions.length)];
+    this.markPhraseUsed(selected);
+    return selected;
+  }
+
   private generateObservation(context: UserContext): string | null {
     const observations: string[] = [];
 
+    // Use user's own words when possible
+    const userWord = this.conversationState.memory.userWordsUsed[0];
+
     if (context.goals.length > 0 && context.emotionalState.length > 0) {
       observations.push(
-        `So it sounds like you want to ${context.goals[0]}, but you're also ${context.emotionalState[0]}. Does that feel like an accurate read?`
+        `So it sounds like you want to ${context.goals[0]}, but you're also ${userWord || 'feeling stretched thin'}. Does that feel like an accurate read?`
       );
     }
 
@@ -361,7 +462,14 @@ export class AILogic {
 
     if (context.emotionalState.length > 0 && context.timeCommitments.length === 0) {
       observations.push(
-        `You mentioned feeling ${context.emotionalState[0]}. Before we go further, are there any hard commitments in your schedule I should know about, or is it more about managing your energy?`
+        `You mentioned feeling ${userWord || context.emotionalState[0]}. Before we go further, are there any hard commitments in your schedule I should know about, or is it more about managing your energy?`
+      );
+    }
+
+    // Reflect on patterns
+    if (context.patterns.repeatedConcerns.length > 1) {
+      observations.push(
+        `I notice you keep mentioning being behind. It sounds like you're someone who takes on a lot — is that fair to say?`
       );
     }
 
@@ -381,6 +489,15 @@ export class AILogic {
 
   updateContext(responseType: ResponseType, userMessage: string): void {
     const message = userMessage.toLowerCase();
+
+    // Capture user's exact words
+    this.captureUserWords(userMessage);
+
+    // Detect casual mentions
+    this.detectCasualMentions(userMessage);
+
+    // Detect patterns
+    this.detectPatterns(userMessage);
 
     switch (responseType) {
       case 'aspiration':
@@ -408,7 +525,8 @@ export class AILogic {
         this.conversationState.userContext.fixedEvents.push({
           title: userMessage,
           date: new Date(),
-          time: undefined
+          time: undefined,
+          isConfirmed: false // Track as view-only until confirmed
         });
         this.conversationState.memory.topicsDiscussed.add('fixed-events');
         break;
@@ -418,14 +536,17 @@ export class AILogic {
         break;
     }
 
+    // Update context completeness
     const contextItems = 
       this.conversationState.userContext.goals.length +
       this.conversationState.userContext.emotionalState.length +
       this.conversationState.userContext.timeCommitments.length +
-      this.conversationState.userContext.fixedEvents.length;
+      this.conversationState.userContext.fixedEvents.length +
+      (Object.keys(this.conversationState.userContext.energyPatterns).length > 0 ? 1 : 0);
 
     this.conversationState.contextCompleteness = Math.min(100, contextItems * 15);
 
+    // Update conversation stage
     if (this.conversationState.contextCompleteness < 30) {
       this.conversationState.stage = 'gathering-context';
     } else if (this.conversationState.contextCompleteness < 60) {
@@ -436,13 +557,20 @@ export class AILogic {
   }
 
   processUserMessage(userMessage: string): { acknowledgment: string; followUp: string | null } {
+    // Analyze user's communication style
     this.analyzeUserResponseStyle(userMessage);
     
+    // Classify the response type
     const responseType = this.classifyResponse(userMessage);
     this.conversationState.lastResponseType = responseType;
 
+    // Generate human acknowledgment
     const acknowledgment = this.generateAcknowledgment(responseType, userMessage);
+
+    // Update context based on what we learned
     this.updateContext(responseType, userMessage);
+
+    // Generate follow-up question (if needed)
     const followUp = this.generateFollowUp(
       responseType, 
       userMessage, 
@@ -465,5 +593,9 @@ export class AILogic {
   shouldSuggestSchedule(): boolean {
     return this.conversationState.contextCompleteness >= 60 &&
            this.conversationState.stage === 'building-schedule';
+  }
+
+  setReturningUser(isReturning: boolean): void {
+    this.conversationState.isReturningUser = isReturning;
   }
 }

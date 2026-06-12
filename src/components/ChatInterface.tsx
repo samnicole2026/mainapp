@@ -1,25 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowUp } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { User, ChatMessage } from '../types';
+import { AILogic } from '../utils/aiLogic';
 
 interface ChatInterfaceProps {
   user: User;
   isOnboarding: boolean;
+  darkMode: boolean;
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, isOnboarding }) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, isOnboarding, darkMode }) => {
+  const [aiLogic] = useState(() => new AILogic());
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
       role: 'assistant',
-      content: `Hey ${user.name}! Ready to get your schedule sorted? What's on your mind today?`,
+      content: aiLogic.getInitialGreeting(),
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const conversationMemory = useRef<Set<string>>(new Set());
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -28,75 +30,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, isOnboarding }) => 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  const getVariedGreeting = () => {
-    const greetings = [
-      "Got it!",
-      "Okay!",
-      "Alright!",
-      "Sure thing!",
-      "Perfect!",
-      "Sounds good!",
-      "I hear you!",
-      "Understood!",
-    ];
-    return greetings[Math.floor(Math.random() * greetings.length)];
-  };
-
-  const getVariedFollowUp = () => {
-    const followUps = [
-      "What else is going on?",
-      "Anything else on your plate?",
-      "What else should we tackle?",
-      "What's next?",
-      "Tell me more about your day.",
-      "What else do you need to fit in?",
-      "What other commitments do you have?",
-    ];
-    return followUps[Math.floor(Math.random() * followUps.length)];
-  };
-
-  const classifyResponse = (text: string): 'task' | 'time' | 'aspiration' | 'indirect' | 'emotional' => {
-    const lowerText = text.toLowerCase();
-    
-    if (lowerText.match(/\b(need to|have to|must|should|got to|gotta)\b/)) {
-      return 'task';
-    }
-    if (lowerText.match(/\b(at|by|around|before|after|morning|afternoon|evening|tonight|today|tomorrow)\b/)) {
-      return 'time';
-    }
-    if (lowerText.match(/\b(want to|would like|hoping to|trying to|planning to)\b/)) {
-      return 'aspiration';
-    }
-    if (lowerText.match(/\b(busy|stressed|overwhelmed|tired|exhausted|hectic|crazy)\b/)) {
-      return 'emotional';
-    }
-    
-    return 'indirect';
-  };
-
-  const generateDynamicResponse = (userMessage: string): string => {
-    const responseType = classifyResponse(userMessage);
-    const greeting = getVariedGreeting();
-    
-    switch (responseType) {
-      case 'task':
-        return `${greeting} How long do you think that'll take?`;
-      
-      case 'time':
-        return `${greeting} And how much time do you need for that?`;
-      
-      case 'aspiration':
-        return `${greeting} When are you hoping to do that?`;
-      
-      case 'emotional':
-        return `${greeting} Let's see what we can do to help. What's taking up most of your time right now?`;
-      
-      case 'indirect':
-      default:
-        return `${greeting} ${getVariedFollowUp()}`;
-    }
-  };
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -112,15 +45,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, isOnboarding }) => 
     setInput('');
     setIsTyping(true);
 
-    conversationMemory.current.add(input.toLowerCase());
-
+    // Process message through AI logic
     setTimeout(() => {
-      const response = generateDynamicResponse(input);
+      const { acknowledgment, followUp } = aiLogic.processUserMessage(input);
+      
+      // SINGLE FLOWING MESSAGE - combine naturally
+      const fullResponse = followUp 
+        ? `${acknowledgment} ${followUp}`
+        : acknowledgment;
       
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response,
+        content: fullResponse,
         timestamp: new Date(),
       };
 
@@ -137,32 +74,32 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, isOnboarding }) => 
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-gradient-to-br from-purple-400 via-pink-400 to-purple-500">
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <div className="flex-1 overflow-y-auto p-6 space-y-3">
         {messages.map((message) => (
           <div
             key={message.id}
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[70%] rounded-2xl px-4 py-3 ${
+              className={`max-w-[70%] rounded-2xl px-4 py-2.5 shadow-lg ${
                 message.role === 'user'
-                  ? 'glass-strong text-black'
-                  : 'bg-white bg-opacity-90 text-black shadow-md'
+                  ? 'bg-white text-gray-900 border-2 border-purple-200'
+                  : 'bg-pink-200 text-gray-900 border-2 border-pink-300'
               }`}
             >
-              <p className="text-sm leading-relaxed">{message.content}</p>
+              <p className="text-sm leading-relaxed font-medium whitespace-pre-wrap">{message.content}</p>
             </div>
           </div>
         ))}
         {isTyping && (
           <div className="flex justify-start">
-            <div className="bg-white bg-opacity-90 text-black rounded-2xl px-4 py-3 shadow-md">
-              <div className="flex space-x-2">
-                <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            <div className="rounded-2xl px-4 py-2.5 bg-pink-200 border-2 border-pink-300 shadow-lg">
+              <div className="flex space-x-1.5">
+                <div className="w-2 h-2 bg-gray-700 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 bg-gray-700 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-gray-700 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
           </div>
@@ -171,7 +108,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, isOnboarding }) => 
       </div>
 
       {/* Input Area */}
-      <div className="p-4 glass-strong">
+      <div className="p-4">
         <div className="relative">
           <input
             type="text"
@@ -179,19 +116,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, isOnboarding }) => 
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Tell me what you need to do..."
-            className="w-full pl-4 pr-12 py-3 rounded-xl glass-input text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-400"
+            className="w-full pl-4 pr-12 py-3 rounded-full bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white shadow-lg border-2 border-purple-200 font-medium"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim()}
-            className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all ${
+            className={`absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
               input.trim()
-                ? 'bg-gradient-to-br from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 shadow-md hover:shadow-lg'
+                ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-md'
                 : 'bg-gray-300 cursor-not-allowed'
             }`}
             title="Send message"
           >
-            <ArrowUp className={`w-5 h-5 ${input.trim() ? 'text-white' : 'text-gray-500'}`} strokeWidth={2.5} />
+            <Send className={`w-4 h-4 ${input.trim() ? 'text-white' : 'text-gray-500'}`} strokeWidth={2.5} />
           </button>
         </div>
       </div>
